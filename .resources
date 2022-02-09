@@ -1,0 +1,3 @@
+# blackduck settings
+DETECT_JAR_PATH=tmp
+

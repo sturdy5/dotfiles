@@ -1,0 +1,57 @@
+[alias]
+    # shortcut for commit
+    ci = commit
+
+    # shortcut for checkout
+    co = checkout
+    
+    # view a list of tags
+    tags = tag -l
+
+    # view a list of branches
+    branches = branch -a
+
+    # view a list of remote definitions
+    remotes = remote -v
+
+    # view abbreviated SHA, description, and history graph of the latest 20 commits
+    l = log --pretty=oneline -n 20 --graph --abbrev-commit
+
+    # view the current working tree status using the short format
+    s = status -s
+
+    # list contributors with number of commits
+    contributors = shortlog --summary --numbered
+
+    # cleanup references to remote branches
+    cleanup = remote prune origin
+
+[credential]
+    # store credentials for 6 hours to prevent having to type username and password over and over
+    helper = cache --timeout=3600
+
+[color]
+    # use colors in git commands that are capable of colored output when outputting to the terminal
+    ui = true
+    status = auto
+    branch = auto
+    interactive = auto
+    diff = auto
+
+[push]
+    default = simple
+
+[http]
+    # turn off ssl verification because of the bluecross websense proxy (aka man-in-the-middle attack)
+    sslVerify = false
+
+[core]
+    autocrlf = input
+
+[help]
+    # automatically correct and execute mistyped commands
+    autocorrect = 1
+[pull]
+    rebase = false
+[init]
+    defaultBranch = main
