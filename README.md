@@ -16,7 +16,7 @@
 
 __Warning:__ If you want to give these dotfiles a try, you should first fork this repo, review the code, and remove things you don't want or need. It is not recommended to blindly use my settings. Use at your own risk!!
 
-This has been tested with cygwin and Git Bash. If you are using some other command line tool, you will be responsible to get the files to work.
+This has been tested with cygwin, Git Bash, zsh, and bash. If you are using some other command line tool, you will be responsible to get the files to work.
 
 ## Using Git and the bootstrap script
 
@@ -74,6 +74,14 @@ PATH=$PATH:$NODE_HOME
 ### Vim
 
 * Sets up vim to work a little better by setting up a different color scheme, updating how the line numbers are portrayed and underlining the current line
+
+### Tmux
+
+* Adds Ctrl+space prefix in addition to the default Ctrl+b
+* Sets tmux to use vim mode for copy and paste
+* Binds | and - to create vertical and horizontal panes, respectively
+* Binds Shift+arrow keys to move between panes
+* Adds some style to tmux
 
 ### Command Line
 
