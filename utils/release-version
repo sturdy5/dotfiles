@@ -74,6 +74,9 @@ fi
 
 # get the latest tag from git, don't fail if there are no tags
 LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+if [[ -z $LATEST_TAG ]]; then
+  LATEST_TAG="0.0.0"
+fi
 # if it starts with a v, remove it
 if [[ $LATEST_TAG == v* ]]; then
   VERSION_PREFIX="v"
