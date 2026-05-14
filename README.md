@@ -2,6 +2,7 @@
 
 ## Recent Changes
 
+* 2026-05-13 - Added a utility script section to help with utils I use a lot
 * 2022-02-09 - Added support for zsh in addition to bash
 * 2021-08-16 - Updated the prompt format to match Microsofts Codespaces theme
 * 2021-02-15 - Updated the git config to set the default branch to main and the pull method to not rebase.

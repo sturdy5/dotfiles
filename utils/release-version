@@ -1,0 +1,130 @@
+#!/bin/bash
+#
+# This script will check the current tags for the associated github repo, and will bump the version based on the parameters passed in. It will then create a new tag with the new version and push it to the remote repository. The parameters include:
+#   -h, --help      Prints out this usage statement
+#   -b, --bump      The type of version bump to perform (major, minor, patch)
+#   -v, --version   The specific version to set (overrides the bump parameter)
+
+usage()
+{
+  echo "release-version - release a new version of the project by creating a new git tag"
+  echo ""
+  echo "Usage: release-version [options]"
+  echo ""
+  echo "The options include:"
+  echo "  -h, --help      Prints out this usage statement"
+  echo "  -b, --bump      The type of version bump to perform (major, minor, patch)"
+  echo "  -v, --version   The specific version to set (overrides the bump parameter)"
+  echo ""
+  echo "Example:"
+  echo "  ./release-version --bump minor"
+}
+
+while [ "$1" != "" ]; do
+  case $1 in
+    -b | --bump )       shift
+                        BUMP_TYPE="$1"
+                        ;;
+    -v | --version )    shift
+                        VERSION="$1"
+                        ;;
+    * )                 usage
+                        exit 1
+  esac
+  shift
+done
+
+# check for missing parameters
+if [[ -z $BUMP_TYPE && -z $VERSION ]]; then
+  echo "Missing parameters"
+  usage
+  exit 1
+fi
+
+# check for valid bump type
+if [[ -n $BUMP_TYPE && ! $BUMP_TYPE =~ ^(major|minor|patch)$ ]]; then
+  echo "Invalid bump type"
+  usage
+  exit 1
+fi
+
+# check for valid version format
+if [[ -n $VERSION && ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Invalid version format"
+  usage
+  exit 1
+fi
+
+# make sure we are in a github repo
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  echo "Not inside a git repository"
+  exit 1
+fi
+
+# check to see if the user has the gh CLI installed, if not, warn them that they will need to manually create the release on github
+if ! command -v gh > /dev/null 2>&1; then
+  echo "Warning: gh CLI not found, you will need to manually create the release on github"
+fi
+
+# check to see if there are any uncommitted changes, if there are, warn the user and exit
+if [[ -n $(git status --porcelain) ]]; then
+  echo "Warning: there are uncommitted changes in the repository, please commit or stash them before running this script"
+  exit 1
+fi
+
+# get the latest tag from git, don't fail if there are no tags
+LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+# if it starts with a v, remove it
+if [[ $LATEST_TAG == v* ]]; then
+  VERSION_PREFIX="v"
+  LATEST_TAG=${LATEST_TAG:1}
+fi
+
+# if version is not set, calculate it based on the bump type
+if [[ -z $VERSION ]]; then
+  # split the latest tag into its components
+  IFS='.' read -r -a VERSION_PARTS <<< "$LATEST_TAG"
+  MAJOR=${VERSION_PARTS[0]}
+  MINOR=${VERSION_PARTS[1]}
+  PATCH=${VERSION_PARTS[2]}
+  # bump the version based on the bump type
+  case $BUMP_TYPE in
+    major )  ((MAJOR++))
+             MINOR=0
+             PATCH=0
+             ;;
+    minor )  ((MINOR++))
+             PATCH=0
+             ;;
+    patch )  ((PATCH++))
+             ;;
+  esac
+  # construct the new version string
+  VERSION="${VERSION_PREFIX}${MAJOR}.${MINOR}.${PATCH}"
+fi
+
+# create the new tag
+git tag -a "$VERSION" -m "Release version $VERSION"
+git push origin "$VERSION"
+
+# if gh is available, create a new release on github using the new tag
+if command -v gh > /dev/null 2>&1; then
+  # get the github URL for the repository
+  REMOTE_URL=$(git config --get remote.origin.url)
+  # if the remote URL starts with git@, convert it to https
+  if [[ $REMOTE_URL == git@* ]]; then
+    GITHUB_URL=$(echo "$REMOTE_URL" | sed -e 's/:/\//' -e 's/^git@/https:\/\//' -e 's/\.git$//')
+  else
+    GITHUB_URL=$(echo "$REMOTE_URL" | sed -e 's/\.git$//')
+  fi
+  # create a compare version statement
+  if [[ -n $LATEST_TAG ]]; then
+    COMPARE_URL="$GITHUB_URL/compare/${VERSION_PREFIX}$LATEST_TAG...$VERSION"
+  else
+    COMPARE_URL="$GITHUB_URL/releases/tag/$VERSION"
+  fi
+  gh release create "$VERSION" --title "Release $VERSION" --notes "Release version $VERSION - **Full Changelog**: $COMPARE_URL"
+fi
+
+# Output the new version
+echo "Released version $VERSION"

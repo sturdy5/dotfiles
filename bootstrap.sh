@@ -17,6 +17,11 @@ function doIt() {
   echo "Copying files..."
   cd "$(dirname "${BASH_SOURCE}")";
 
+  mkdir -p ~/apps;
+  mkdir -p ~/.local/bin;
+  cp --no-preserve=ownership utils/* ~/.local/bin/;
+  echo "PATH=\"\$HOME/.local/bin:\$PATH\"" >> ~/.path;
+
   if [[ -z "${MSYSTEM}" ]]; then
     # Not in git bash, use rsync
     rsync --exclude ".git/" \
@@ -24,6 +29,7 @@ function doIt() {
         --exclude "README.md" \
         --exclude ".idea" \
         --exclude ".gitignore" \
+        --exclude "utils/" \
         -avh --no-perms . ~;
   else
     # manually copy over what we can

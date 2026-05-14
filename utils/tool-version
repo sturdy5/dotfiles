@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# This script is used to setup a tool with a specific version on the path. It will take in the tool name and version as arguments and will attempt to find the tool in the directory specified as "TOOLS_DIR". If the tool is found, it will be added to the path. If the tool is not found, an error message will be displayed. The "TOOLS_DIR" variable is defaulted to ~/apps
+# 
+
+# Set the default tools directory
+TOOLS_DIR="${TOOLS_DIR:-$HOME/apps}"
+
+usage()
+{
+  echo "tool-version - sets the tool to the specific version in your PATH"
+  echo ""
+  echo "Usage: tool-version [options]"
+  echo ""
+  echo "Defaults the tools directory to ~/apps, you can override this by setting the TOOLS_DIR environment variable."
+  echo ""
+  echo "The options include:"
+  echo "  -t, --tool          The tool to set the version for"
+  echo "  -v, --version       The version of the tool"
+  echo "      --include-bin   Include \"/bin\" in the tool path"
+  echo ""
+  echo "Examples:"
+  echo "  tool-version -t oc -v 4.18"
+  echo "  tool-version -t java -v 21 --include-bin"
+}
+
+while [ "$1" != "" ]; do
+  case $1 in
+    --include-bin )     INCLUDE_BIN="true"
+                        ;;
+    -t | --tool )       shift
+                        TOOL_NAME="$1"
+                        ;;
+    -v | --version )    shift
+                        TOOL_VERSION="$1"
+                        ;;
+    -b | --base-dir )   shift
+                        BASE_DIR="$1"
+                        ;;
+    * )                 usage
+                        exit 1
+  esac
+  shift
+done
+
+# check for missing parameters
+if [[ -z $TOOL_NAME || -z $TOOL_VERSION ]]; then
+  echo "Missing parameters"
+  usage
+  exit 1
+fi
+
+# Construct the tool path
+TOOL_PATH="$TOOLS_DIR/$TOOL_NAME/$TOOL_VERSION"
+# Check if the tool exists
+if [ -d "$TOOL_PATH" ]; then
+    # check to see if there is already a "current" symbolic link for the tool, if there is, remove it
+    if [ -L "$TOOLS_DIR/$TOOL_NAME/current" ]; then
+        rm "$TOOLS_DIR/$TOOL_NAME/current"
+    fi
+    # create a symbolic link to the tool under $TOOLS_DIR/$TOOL_NAME/current
+    ln -sfn "$TOOL_PATH" "$TOOLS_DIR/$TOOL_NAME/current"
+    # Add the tool to the path
+    if [ "$INCLUDE_BIN" == "true" ]; then
+        PATH="$TOOLS_DIR/$TOOL_NAME/current/bin:$PATH"
+    else
+        PATH="$TOOLS_DIR/$TOOL_NAME/current:$PATH"
+    fi
+    # check to see if there is a ~/.path file, if there is, add the tool to the path in that file
+    if [ -f "$HOME/.path" ]; then
+        if ! grep -q "$TOOLS_DIR/$TOOL_NAME/current" "$HOME/.path"; then
+            if [ "$INCLUDE_BIN" == "true" ]; then
+                echo "PATH=\"$TOOLS_DIR/$TOOL_NAME/current/bin:\$PATH\"" >> "$HOME/.path"
+            else
+                echo "PATH=\"$TOOLS_DIR/$TOOL_NAME/current:\$PATH\"" >> "$HOME/.path"
+            fi
+        fi
+    else
+        if [ "$INCLUDE_BIN" == "true" ]; then
+            echo "PATH=\"$TOOLS_DIR/$TOOL_NAME/current/bin:\$PATH\"" >> "$HOME/.path"
+        else
+            echo "PATH=\"$TOOLS_DIR/$TOOL_NAME/current:\$PATH\"" >> "$HOME/.path"
+        fi
+    fi
+    echo "Tool $TOOL_NAME version $TOOL_VERSION has been set up and added to the path."
+else
+    echo "Error: Tool $TOOL_NAME version $TOOL_VERSION not found in $TOOLS_DIR."
+    exit 1
+fi
